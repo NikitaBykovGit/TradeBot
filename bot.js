@@ -1,6 +1,8 @@
 require('dotenv').config();
+
 const { Bot } = require('node-telegram-bot-api');
 const { run } = require('node-telegram-bot-api/node');
+const { getMexcBalance } = require('./mexc');
 
 const token = process.env.BOT_TOKEN;
 
@@ -11,9 +13,20 @@ if (!token) {
 
 const bot = new Bot(token);
 
-bot.on('message', (ctx) => {
-  if (ctx.message?.text) {
-    ctx.reply(ctx.message.text + '1');
+bot.command('balance', async (ctx) => {
+  try {
+    const balances = await getMexcBalance();
+    if (balances.length === 0) {
+      await ctx.reply('Баланс пуст.');
+      return;
+    }
+
+    const text = balances
+      .map((b) => `${b.asset}: ${b.free}${parseFloat(b.locked) > 0 ? ` (в ордерах: ${b.locked})` : ''}`)
+      .join('\n');
+    await ctx.reply(`Баланс MEXC:\n${text}`);
+  } catch (err) {
+    await ctx.reply(`Не удалось получить баланс: ${err.message || err}`);
   }
 });
 
