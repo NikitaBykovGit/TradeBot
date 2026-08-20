@@ -1,8 +1,8 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const { Bot } = require('node-telegram-bot-api');
-const { run } = require('node-telegram-bot-api/node');
-const { getMexcBalance } = require('./mexc');
+import { Bot, Context } from 'node-telegram-bot-api';
+import { run } from 'node-telegram-bot-api/node';
+import { getMexcBalance } from './mexc.js';
 
 const token = process.env.BOT_TOKEN;
 
@@ -13,7 +13,7 @@ if (!token) {
 
 const bot = new Bot(token);
 
-bot.command('balance', async (ctx) => {
+bot.command('balance', async (ctx: Context) => {
   try {
     const balances = await getMexcBalance();
     if (balances.length === 0) {
@@ -26,7 +26,8 @@ bot.command('balance', async (ctx) => {
       .join('\n');
     await ctx.reply(`Баланс MEXC:\n${text}`);
   } catch (err) {
-    await ctx.reply(`Не удалось получить баланс: ${err.message || err}`);
+    const message = err instanceof Error ? err.message : String(err);
+    await ctx.reply(`Не удалось получить баланс: ${message}`);
   }
 });
 
@@ -37,6 +38,6 @@ bot.catch((err) => {
 run(bot)
   .then(() => console.log('Бот запущен'))
   .catch((err) => {
-    console.error('Не удалось запустить бота:', err.message || err);
+    console.error('Не удалось запустить бота:', err instanceof Error ? err.message : err);
     process.exit(1);
   });

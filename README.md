@@ -10,10 +10,12 @@ Telegram-бот на [node-telegram-bot-api](https://github.com/yagop/node-teleg
 
 | Файл | Назначение |
 |---|---|
-| `bot.js` | Точка входа: инициализация Telegram-бота, обработчики команд. |
-| `mexc.js` | Интеграция с MEXC API: подпись запроса (HMAC SHA256) и получение баланса. |
-| `system.config.js` | Конфиг PM2 для запуска бота на сервере. |
+| `bot.ts` | Точка входа: инициализация Telegram-бота, обработчики команд. |
+| `mexc.ts` | Интеграция с MEXC API: подпись запроса (HMAC SHA256) и получение баланса. |
+| `system.config.cjs` | Конфиг PM2 для запуска бота на сервере (запускает собранный `dist/bot.js`). |
 | `.github/workflows/deploy.yml` | GitHub Actions: деплой на VDS по SSH при пуше в `main`. |
+
+Проект написан на TypeScript и собирается в `dist/` перед запуском.
 
 ## Установка
 
@@ -36,13 +38,22 @@ MEXC_API_SECRET=ваш_api_secret_mexc
 
 ## Запуск
 
+Для разработки (запуск `.ts` напрямую, с автоперезапуском при изменениях):
+
 ```bash
+npm run dev
+```
+
+Для продакшена (сборка в `dist/`, затем запуск):
+
+```bash
+npm run build
 npm start
 ```
 
 ## Деплой
 
-При пуше в ветку `main` GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) подключается к VDS по SSH, делает `git pull`, `npm ci --omit=dev` и перезапускает процесс через PM2 (`system.config.js`).
+При пуше в ветку `main` GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) подключается к VDS по SSH, делает `git pull`, `npm ci`, `npm run build`, `npm prune --omit=dev` и перезапускает процесс через PM2 (`system.config.cjs`).
 
 Требуемые секреты репозитория (Settings → Secrets and variables → Actions):
 

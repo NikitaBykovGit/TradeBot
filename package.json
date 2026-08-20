@@ -2,13 +2,20 @@
   "name": "trade-bot",
   "version": "1.0.0",
   "description": "Simple echo Telegram bot",
-  "main": "bot.js",
-  "type": "commonjs",
+  "main": "dist/bot.js",
+  "type": "module",
   "scripts": {
-    "start": "node bot.js"
+    "dev": "tsx watch bot.ts",
+    "build": "tsc",
+    "start": "node dist/bot.js"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^2.0.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "node-telegram-bot-api": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
   }
 }
