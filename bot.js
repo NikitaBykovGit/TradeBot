@@ -13,7 +13,7 @@ const bot = new Bot(token);
 
 bot.on('message', (ctx) => {
   if (ctx.message?.text) {
-    ctx.reply(ctx.message.text);
+    ctx.reply(ctx.message.text + '1');
   }
 });
 
