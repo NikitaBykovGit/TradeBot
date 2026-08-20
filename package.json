@@ -4,8 +4,14 @@
   "description": "Simple echo Telegram bot",
   "main": "dist/bot.js",
   "type": "module",
+  "imports": {
+    "#commands": {
+      "development": "./commands/index.ts",
+      "default": "./dist/commands/index.js"
+    }
+  },
   "scripts": {
-    "dev": "tsx watch bot.ts",
+    "dev": "tsx watch --conditions=development bot.ts",
     "build": "tsc",
     "start": "node dist/bot.js"
   },

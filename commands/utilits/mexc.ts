@@ -1,18 +1,8 @@
 import crypto from 'node:crypto';
+import type { MexcAccountResponse, MexcBalance } from '../../model';
 
 const mexcApiKey = process.env.MEXC_API_KEY;
 const mexcApiSecret = process.env.MEXC_API_SECRET;
-
-export interface MexcBalance {
-  asset: string;
-  free: string;
-  locked: string;
-}
-
-interface MexcAccountResponse {
-  balances: MexcBalance[];
-  msg?: string;
-}
 
 async function getMexcServerTime(): Promise<number> {
   const res = await fetch('https://api.mexc.com/api/v3/time');
