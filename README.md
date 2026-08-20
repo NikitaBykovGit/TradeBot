@@ -12,12 +12,12 @@ Telegram-бот на [node-telegram-bot-api](https://github.com/yagop/node-teleg
 
 | Файл | Назначение |
 |---|---|
-| `bot.ts` | Точка входа: инициализация Telegram-бота, обработчики команд, запуск слежения за сделками. |
+| `core/bot.ts` | Точка входа: инициализация Telegram-бота, обработчики команд, запуск слежения за сделками. |
+| `core/subscribers.ts` | Хранение chat_id подписчиков на уведомления (`data/subscribers.json`). |
+| `core/grid-watcher.ts` | Поллинг сделок грид-бота и рассылка уведомлений подписчикам. |
 | `commands/` | Классы команд (`Command` — базовый класс, `Balance` — `/balance`). |
 | `commands/utilits/mexc.ts` | Интеграция с MEXC API: подписанные запросы (HMAC SHA256), баланс и история сделок. |
 | `model/` | Общие TypeScript-типы (MEXC-ответы, баланс, сделки). |
-| `subscribers.ts` | Хранение chat_id подписчиков на уведомления (`data/subscribers.json`). |
-| `grid-watcher.ts` | Поллинг сделок грид-бота и рассылка уведомлений подписчикам. |
 | `system.config.cjs` | Конфиг PM2 для запуска бота на сервере (запускает собранный `dist/bot.js`). |
 | `.github/workflows/deploy.yml` | GitHub Actions: деплой на VDS по SSH при пуше в `main`. |
 

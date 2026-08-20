@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'trade-bot',
-      script: 'dist/bot.js',
+      script: 'dist/core/bot.js',
       instances: 1,
       autorestart: true,
       watch: false,

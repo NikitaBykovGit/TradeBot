@@ -1,14 +1,12 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Bot } from 'node-telegram-bot-api';
-import type { MexcTrade } from './model';
-import { getMexcTrades } from './commands/utilits/index.js';
+import type { GridState, MexcTrade } from '../model';
+import { getMexcTrades } from '../commands/utilits/index.js';
 import { getSubscribers } from './subscribers.js';
 
 const STATE_PATH = path.resolve(process.cwd(), 'data', 'grid-state.json');
 const DEFAULT_POLL_INTERVAL_MS = 20_000;
-
-type GridState = Record<string, number>;
 
 async function readState(): Promise<GridState> {
   try {
