@@ -5,7 +5,7 @@ import { run } from 'node-telegram-bot-api/node';
 
 import { Balance } from '#commands';
 import { addSubscriber } from './subscribers.js';
-import { startGridWatcher } from './grid-watcher.js';
+import { startTradeWatcher } from './trade-watcher.js';
 
 const token = process.env.BOT_TOKEN;
 
@@ -20,7 +20,7 @@ bot.command('start', async (ctx: Context) => {
   if (ctx.chatId !== undefined) {
     await addSubscriber(ctx.chatId);
   }
-  await ctx.reply('Привет! Я пришлю уведомление, когда грид-бот на MEXC совершит сделку.');
+  await ctx.reply('Привет! Я пришлю уведомление о каждой спотовой сделке на MEXC.');
 });
 
 bot.command('balance', async (ctx: Context) => {
@@ -28,7 +28,7 @@ bot.command('balance', async (ctx: Context) => {
   await command.run(ctx);
 });
 
-startGridWatcher(bot);
+startTradeWatcher(bot);
 
 bot.catch((err) => {
   console.error('Bot error:', err);

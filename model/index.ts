@@ -1,2 +1,2 @@
 export * from './mexc';
-export * from './grid';
+export * from './trade';

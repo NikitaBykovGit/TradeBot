@@ -1,17 +1,17 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Bot } from 'node-telegram-bot-api';
-import type { GridState, MexcTrade } from '../model';
+import type { TradeState, MexcTrade } from '../model';
 import { getMexcTrades } from '../commands/utilits/index.js';
 import { getSubscribers } from './subscribers.js';
-import { GRID_SYMBOLS, GRID_POLL_INTERVAL_MS } from '../config.js';
+import { TRADE_SYMBOLS, TRADE_POLL_INTERVAL_MS } from '../config.js';
 
-const STATE_PATH = path.resolve(process.cwd(), 'data', 'grid-state.json');
+const STATE_PATH = path.resolve(process.cwd(), 'data', 'trade-state.json');
 
-async function readState(): Promise<GridState> {
+async function readState(): Promise<TradeState> {
   try {
     const raw = await fs.readFile(STATE_PATH, 'utf8');
-    return JSON.parse(raw) as GridState;
+    return JSON.parse(raw) as TradeState;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       return {};
@@ -20,7 +20,7 @@ async function readState(): Promise<GridState> {
   }
 }
 
-async function writeState(state: GridState): Promise<void> {
+async function writeState(state: TradeState): Promise<void> {
   await fs.mkdir(path.dirname(STATE_PATH), { recursive: true });
   await fs.writeFile(STATE_PATH, JSON.stringify(state, null, 2));
 }
@@ -28,7 +28,7 @@ async function writeState(state: GridState): Promise<void> {
 function formatTradeMessage(trade: MexcTrade): string {
   const side = trade.isBuyer ? 'Покупка' : 'Продажа';
   return (
-    `🤖 Грид-бот: ${side} ${trade.symbol}\n` +
+    `${side} ${trade.symbol}\n` +
     `Цена: ${trade.price}\n` +
     `Кол-во: ${trade.qty}\n` +
     `Сумма: ${trade.quoteQty}`
@@ -48,7 +48,7 @@ async function notifySubscribers(bot: Bot, trade: MexcTrade): Promise<void> {
   }
 }
 
-async function pollSymbol(bot: Bot, symbol: string, state: GridState): Promise<void> {
+async function pollSymbol(bot: Bot, symbol: string, state: TradeState): Promise<void> {
   const lastTime = state[symbol];
   const startTime = lastTime !== undefined ? lastTime + 1 : undefined;
   const trades = await getMexcTrades(symbol, startTime);
@@ -70,15 +70,15 @@ async function pollSymbol(bot: Bot, symbol: string, state: GridState): Promise<v
   state[symbol] = trades[trades.length - 1]!.time;
 }
 
-export function startGridWatcher(bot: Bot): void {
-  const symbols = GRID_SYMBOLS;
+export function startTradeWatcher(bot: Bot): void {
+  const symbols = TRADE_SYMBOLS;
 
   if (symbols.length === 0) {
-    console.log('Список символов пуст — уведомления о сделках грид-бота отключены.');
+    console.log('Список символов пуст — уведомления о сделках отключены.');
     return;
   }
 
-  const pollIntervalMs = GRID_POLL_INTERVAL_MS;
+  const pollIntervalMs = TRADE_POLL_INTERVAL_MS;
 
   setInterval(async () => {
     const state = await readState();
@@ -102,5 +102,5 @@ export function startGridWatcher(bot: Bot): void {
     }
   }, pollIntervalMs);
 
-  console.log(`Слежение за сделками грид-бота включено: ${symbols.join(', ')} (каждые ${pollIntervalMs / 1000} с).`);
+  console.log(`Слежение за сделками включено: ${symbols.join(', ')} (каждые ${pollIntervalMs / 1000} с).`);
 }
