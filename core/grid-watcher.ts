@@ -4,10 +4,9 @@ import type { Bot } from 'node-telegram-bot-api';
 import type { GridState, MexcTrade } from '../model';
 import { getMexcTrades } from '../commands/utilits/index.js';
 import { getSubscribers } from './subscribers.js';
-import { GRID_SYMBOLS } from './grid-config.js';
+import { GRID_SYMBOLS, GRID_POLL_INTERVAL_MS } from '../config.js';
 
 const STATE_PATH = path.resolve(process.cwd(), 'data', 'grid-state.json');
-const DEFAULT_POLL_INTERVAL_MS = 20_000;
 
 async function readState(): Promise<GridState> {
   try {
@@ -79,7 +78,7 @@ export function startGridWatcher(bot: Bot): void {
     return;
   }
 
-  const pollIntervalMs = Number(process.env.GRID_POLL_INTERVAL_MS) || DEFAULT_POLL_INTERVAL_MS;
+  const pollIntervalMs = GRID_POLL_INTERVAL_MS;
 
   setInterval(async () => {
     const state = await readState();

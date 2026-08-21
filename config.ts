@@ -1,1 +1,2 @@
 export const GRID_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'GOLD(XAUT)USDT'];
+export const GRID_POLL_INTERVAL_MS = 20_000;
