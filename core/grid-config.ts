@@ -1,0 +1,1 @@
+export const GRID_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'GOLD(XAUT)USDT'];

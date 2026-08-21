@@ -4,6 +4,7 @@ import type { Bot } from 'node-telegram-bot-api';
 import type { GridState, MexcTrade } from '../model';
 import { getMexcTrades } from '../commands/utilits/index.js';
 import { getSubscribers } from './subscribers.js';
+import { GRID_SYMBOLS } from './grid-config.js';
 
 const STATE_PATH = path.resolve(process.cwd(), 'data', 'grid-state.json');
 const DEFAULT_POLL_INTERVAL_MS = 20_000;
@@ -71,13 +72,10 @@ async function pollSymbol(bot: Bot, symbol: string, state: GridState): Promise<v
 }
 
 export function startGridWatcher(bot: Bot): void {
-  const symbols = (process.env.GRID_SYMBOLS ?? '')
-    .split(',')
-    .map((symbol) => symbol.trim().toUpperCase())
-    .filter(Boolean);
+  const symbols = GRID_SYMBOLS;
 
   if (symbols.length === 0) {
-    console.log('GRID_SYMBOLS не задан — уведомления о сделках грид-бота отключены.');
+    console.log('Список символов пуст — уведомления о сделках грид-бота отключены.');
     return;
   }
 
