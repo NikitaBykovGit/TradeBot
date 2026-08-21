@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import type { MexcAccountResponse, MexcBalance, MexcTrade } from '../../model';
+import type { MexcAccountResponse, MexcBalance } from '../../model';
 
 const mexcApiKey = process.env.MEXC_API_KEY;
 const mexcApiSecret = process.env.MEXC_API_SECRET;
@@ -10,7 +10,11 @@ async function getMexcServerTime(): Promise<number> {
   return data.serverTime;
 }
 
-async function mexcSignedGet<T>(path: string, params: Record<string, string>): Promise<T> {
+async function mexcSignedRequest<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  params: Record<string, string> = {},
+): Promise<T> {
   if (!mexcApiKey || !mexcApiSecret) {
     throw new Error('MEXC_API_KEY и MEXC_API_SECRET не заданы в .env');
   }
@@ -20,6 +24,7 @@ async function mexcSignedGet<T>(path: string, params: Record<string, string>): P
   const signature = crypto.createHmac('sha256', mexcApiSecret).update(query).digest('hex');
 
   const res = await fetch(`https://api.mexc.com${path}?${query}&signature=${signature}`, {
+    method,
     headers: { 'X-MEXC-APIKEY': mexcApiKey },
   });
 
@@ -33,15 +38,19 @@ async function mexcSignedGet<T>(path: string, params: Record<string, string>): P
 }
 
 export async function getMexcBalance(): Promise<MexcBalance[]> {
-  const data = await mexcSignedGet<MexcAccountResponse>('/api/v3/account', {});
+  const data = await mexcSignedRequest<MexcAccountResponse>('GET', '/api/v3/account');
   return data.balances.filter((b) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
 }
 
-export async function getMexcTrades(symbol: string, startTime?: number): Promise<MexcTrade[]> {
-  const params: Record<string, string> = { symbol, limit: '100' };
-  if (startTime !== undefined) {
-    params.startTime = String(startTime);
-  }
+export async function createListenKey(): Promise<string> {
+  const data = await mexcSignedRequest<{ listenKey: string }>('POST', '/api/v3/userDataStream');
+  return data.listenKey;
+}
 
-  return mexcSignedGet<MexcTrade[]>('/api/v3/myTrades', params);
+export async function keepAliveListenKey(listenKey: string): Promise<void> {
+  await mexcSignedRequest('PUT', '/api/v3/userDataStream', { listenKey });
+}
+
+export async function closeListenKey(listenKey: string): Promise<void> {
+  await mexcSignedRequest('DELETE', '/api/v3/userDataStream', { listenKey });
 }

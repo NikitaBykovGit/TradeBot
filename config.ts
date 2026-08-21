@@ -1,2 +1,0 @@
-export const TRADE_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'GOLD(XAUT)USDT'];
-export const TRADE_POLL_INTERVAL_MS = 20_000;
