@@ -6,7 +6,7 @@ import { run } from 'node-telegram-bot-api/node';
 import { Balance } from '#commands';
 import { addSubscriber } from './subscribers.js';
 import { startTradeWatcher } from './trade-watcher.js';
-import { startArbitrageWatcher } from './arbitrage-watcher.js';
+// import { startArbitrageWatcher } from './arbitrage-watcher.js'; // временно отключено
 
 const token = process.env.BOT_TOKEN;
 
@@ -32,7 +32,8 @@ bot.command('balance', async (ctx: Context) => {
 });
 
 startTradeWatcher(bot);
-startArbitrageWatcher(bot);
+// TODO: временно отключено
+// startArbitrageWatcher(bot);
 
 bot.catch((err) => {
   console.error('Bot error:', err);
