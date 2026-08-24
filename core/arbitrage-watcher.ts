@@ -4,7 +4,7 @@ import { getSubscribers } from './subscribers.js';
 const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
 const BINGX_TICKER_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/ticker';
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
-const DEFAULT_THRESHOLD_PERCENT = 1;
+const DEFAULT_THRESHOLD_PERCENT = 3.2;
 
 interface MexcTickerResponse {
   success: boolean;
