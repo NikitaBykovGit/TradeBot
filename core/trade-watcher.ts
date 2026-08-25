@@ -2,7 +2,7 @@ import path from 'node:path';
 import protobuf from 'protobufjs';
 import { WebSocket } from 'ws';
 import type { Bot } from 'node-telegram-bot-api';
-import type { MexcTrade } from '../model';
+import type { MexcTrade, MexcPushDataWrapperPayload } from '../model';
 import { createListenKey, keepAliveListenKey } from '../commands/utilits/index.js';
 import { getSubscribers } from './subscribers.js';
 
@@ -13,25 +13,6 @@ const LISTEN_KEY_KEEPALIVE_MS = 30 * 60 * 1000;
 const RECONNECT_DELAY_MS = 5_000;
 
 const PROTO_PATH = path.resolve(process.cwd(), 'core', 'mexc-ws', 'push-data.proto');
-
-interface PrivateDealsPayload {
-  price: string;
-  quantity: string;
-  amount: string;
-  tradeType: number;
-  isMaker: boolean;
-  tradeId: string;
-  orderId: string;
-  feeAmount: string;
-  feeCurrency: string;
-  time: number;
-}
-
-interface PushDataWrapperPayload {
-  channel: string;
-  symbol?: string;
-  privateDeals?: PrivateDealsPayload;
-}
 
 let wrapperTypePromise: Promise<protobuf.Type> | undefined;
 
@@ -69,7 +50,7 @@ async function handleBinaryMessage(bot: Bot, data: Buffer): Promise<void> {
   const wrapperType = await getWrapperType();
   const decoded = wrapperType.toObject(wrapperType.decode(data), {
     longs: Number,
-  }) as PushDataWrapperPayload;
+  }) as MexcPushDataWrapperPayload;
 
   if (decoded.channel !== DEALS_CHANNEL || !decoded.privateDeals || !decoded.symbol) {
     return;

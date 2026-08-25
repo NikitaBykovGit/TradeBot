@@ -1,5 +1,6 @@
 import type { Bot } from 'node-telegram-bot-api';
 import { getSubscribers } from './subscribers.js';
+import type { MexcTickerResponse, MexcDetailResponse, BingxTickerResponse } from '../model';
 
 const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
 const MEXC_DETAIL_URL = 'https://contract.mexc.com/api/v1/contract/detail';
@@ -7,21 +8,6 @@ const BINGX_TICKER_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/ticke
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
 const DEFAULT_THRESHOLD_PERCENT = 2;
 const MEXC_ALLOWED_SYMBOLS_TTL_MS = 30 * 60_000;
-
-interface MexcTickerResponse {
-  success: boolean;
-  data: Array<{ symbol: string; lastPrice: number }>;
-}
-
-interface MexcDetailResponse {
-  success: boolean;
-  data: Array<{ symbol: string; apiAllowed: boolean }>;
-}
-
-interface BingxTickerResponse {
-  code: number;
-  data: Array<{ symbol: string; lastPrice: string }>;
-}
 
 let mexcAllowedSymbolsCache: { symbols: Set<string>; fetchedAt: number } | null = null;
 

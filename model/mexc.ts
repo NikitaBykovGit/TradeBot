@@ -22,3 +22,32 @@ export interface MexcTrade {
   isBuyer: boolean;
   isMaker: boolean;
 }
+
+export interface MexcTickerResponse {
+  success: boolean;
+  data: Array<{ symbol: string; lastPrice: number }>;
+}
+
+export interface MexcDetailResponse {
+  success: boolean;
+  data: Array<{ symbol: string; apiAllowed: boolean }>;
+}
+
+export interface MexcPrivateDealsPayload {
+  price: string;
+  quantity: string;
+  amount: string;
+  tradeType: number;
+  isMaker: boolean;
+  tradeId: string;
+  orderId: string;
+  feeAmount: string;
+  feeCurrency: string;
+  time: number;
+}
+
+export interface MexcPushDataWrapperPayload {
+  channel: string;
+  symbol?: string;
+  privateDeals?: MexcPrivateDealsPayload;
+}
