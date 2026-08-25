@@ -33,6 +33,12 @@ export interface MexcDetailResponse {
   data: Array<{ symbol: string; apiAllowed: boolean }>;
 }
 
+export interface MexcFuturesAssetsResponse {
+  success: boolean;
+  code?: number;
+  data?: Array<{ currency: string; availableBalance: number }>;
+}
+
 export interface MexcPrivateDealsPayload {
   price: string;
   quantity: string;
