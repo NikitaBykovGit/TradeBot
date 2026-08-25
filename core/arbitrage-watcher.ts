@@ -117,33 +117,31 @@ async function fetchBingxFuturesUsdtBalance(): Promise<number> {
   return Number(body.data?.balance?.availableMargin ?? 0);
 }
 
-async function checkFuturesBalanceWarning(): Promise<string | null> {
+async function getFuturesBalancesInfo(): Promise<string> {
   const [mexcResult, bingxResult] = await Promise.allSettled([
     fetchMexcFuturesUsdtBalance(),
     fetchBingxFuturesUsdtBalance(),
   ]);
 
-  const warnings: string[] = [];
+  const lines: string[] = [];
 
   if (mexcResult.status === 'fulfilled') {
-    if (mexcResult.value < MIN_FUTURES_BALANCE_USDT) {
-      warnings.push(`❗ Баланс фьючерсов MEXC ниже ${MIN_FUTURES_BALANCE_USDT} USDT: ${mexcResult.value.toFixed(2)} USDT`);
-    }
+    const belowMin = mexcResult.value < MIN_FUTURES_BALANCE_USDT ? ' ❗ ниже минимума' : '';
+    lines.push(`Баланс MEXC: ${mexcResult.value.toFixed(2)} USDT${belowMin}`);
   } else {
     const reason = mexcResult.reason instanceof Error ? mexcResult.reason.message : String(mexcResult.reason);
-    warnings.push(`❗ Не удалось проверить баланс фьючерсов MEXC: ${reason}`);
+    lines.push(`❗ Не удалось получить баланс фьючерсов MEXC: ${reason}`);
   }
 
   if (bingxResult.status === 'fulfilled') {
-    if (bingxResult.value < MIN_FUTURES_BALANCE_USDT) {
-      warnings.push(`❗ Баланс фьючерсов BingX ниже ${MIN_FUTURES_BALANCE_USDT} USDT: ${bingxResult.value.toFixed(2)} USDT`);
-    }
+    const belowMin = bingxResult.value < MIN_FUTURES_BALANCE_USDT ? ' ❗ ниже минимума' : '';
+    lines.push(`Баланс BingX: ${bingxResult.value.toFixed(2)} USDT${belowMin}`);
   } else {
     const reason = bingxResult.reason instanceof Error ? bingxResult.reason.message : String(bingxResult.reason);
-    warnings.push(`❗ Не удалось проверить баланс фьючерсов BingX: ${reason}`);
+    lines.push(`❗ Не удалось получить баланс фьючерсов BingX: ${reason}`);
   }
 
-  return warnings.length > 0 ? warnings.join('\n') : null;
+  return lines.join('\n');
 }
 
 function formatOpportunityMessage(
@@ -151,16 +149,16 @@ function formatOpportunityMessage(
   mexcPrice: number,
   bingxPrice: number,
   diffPercent: number,
-  balanceWarning: string | null,
+  balancesInfo: string,
 ): string {
   const cheaperExchange = mexcPrice < bingxPrice ? 'MEXC' : 'BingX';
-  const message =
+  return (
     `⚡ Арбитраж на фьючерсах: ${symbol}\n` +
     `MEXC: ${mexcPrice}\n` +
     `BingX: ${bingxPrice}\n` +
-    `Разница: ${diffPercent.toFixed(2)}% (дешевле на ${cheaperExchange})`;
-
-  return balanceWarning ? `${message}\n${balanceWarning}` : message;
+    `Разница: ${diffPercent.toFixed(2)}% (дешевле на ${cheaperExchange})\n` +
+    balancesInfo
+  );
 }
 
 async function notifySubscribers(bot: Bot, text: string): Promise<void> {
@@ -206,10 +204,10 @@ export function startArbitrageWatcher(bot: Bot): void {
       if (diffPercent >= thresholdPercent) {
         if (!activeSymbols.has(symbol)) {
           activeSymbols.add(symbol);
-          const balanceWarning = await checkFuturesBalanceWarning();
+          const balancesInfo = await getFuturesBalancesInfo();
           await notifySubscribers(
             bot,
-            formatOpportunityMessage(symbol, mexcPrice, bingxPrice, diffPercent, balanceWarning),
+            formatOpportunityMessage(symbol, mexcPrice, bingxPrice, diffPercent, balancesInfo),
           );
         }
       } else {
