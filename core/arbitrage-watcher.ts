@@ -2,13 +2,20 @@ import type { Bot } from 'node-telegram-bot-api';
 import { getSubscribers } from './subscribers.js';
 
 const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
+const MEXC_DETAIL_URL = 'https://contract.mexc.com/api/v1/contract/detail';
 const BINGX_TICKER_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/ticker';
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
-const DEFAULT_THRESHOLD_PERCENT = 3.2;
+const DEFAULT_THRESHOLD_PERCENT = 2;
+const MEXC_ALLOWED_SYMBOLS_TTL_MS = 30 * 60_000;
 
 interface MexcTickerResponse {
   success: boolean;
   data: Array<{ symbol: string; lastPrice: number }>;
+}
+
+interface MexcDetailResponse {
+  success: boolean;
+  data: Array<{ symbol: string; apiAllowed: boolean }>;
 }
 
 interface BingxTickerResponse {
@@ -16,12 +23,35 @@ interface BingxTickerResponse {
   data: Array<{ symbol: string; lastPrice: string }>;
 }
 
+let mexcAllowedSymbolsCache: { symbols: Set<string>; fetchedAt: number } | null = null;
+
+async function fetchMexcAllowedSymbols(): Promise<Set<string>> {
+  if (mexcAllowedSymbolsCache && Date.now() - mexcAllowedSymbolsCache.fetchedAt < MEXC_ALLOWED_SYMBOLS_TTL_MS) {
+    return mexcAllowedSymbolsCache.symbols;
+  }
+
+  const res = await fetch(MEXC_DETAIL_URL);
+  const body = (await res.json()) as MexcDetailResponse;
+  const symbols = new Set<string>();
+
+  for (const contract of body.data ?? []) {
+    if (contract.apiAllowed) {
+      symbols.add(contract.symbol);
+    }
+  }
+
+  mexcAllowedSymbolsCache = { symbols, fetchedAt: Date.now() };
+  return symbols;
+}
+
 async function fetchMexcFuturesPrices(): Promise<Map<string, number>> {
-  const res = await fetch(MEXC_TICKER_URL);
+  const [res, allowedSymbols] = await Promise.all([fetch(MEXC_TICKER_URL), fetchMexcAllowedSymbols()]);
   const body = (await res.json()) as MexcTickerResponse;
   const prices = new Map<string, number>();
 
   for (const ticker of body.data ?? []) {
+    if (!allowedSymbols.has(ticker.symbol)) continue;
+
     const price = Number(ticker.lastPrice);
     if (price > 0) {
       prices.set(ticker.symbol.replace('_', '/'), price);
