@@ -33,6 +33,9 @@ bot.use(async (ctx, next) => {
 const mainKeyboard = new ReplyKeyboardBuilder()
   .text('/balance')
   .text('/status')
+  .row()
+  .text('/trade')
+  .text('/stop')
   .build({ resize_keyboard: true, is_persistent: true });
 
 bot.command('start', async (ctx: Context) => {
