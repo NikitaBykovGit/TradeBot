@@ -166,6 +166,22 @@ export async function openMexcFuturesPosition(
   return { orderId, vol };
 }
 
+export async function estimateMexcMargin(
+  symbol: string,
+  price: number,
+  marginUsdt: number,
+  leverage: number,
+): Promise<number> {
+  const details = await getMexcContractDetails();
+  const detail = details.get(symbol);
+  if (!detail) {
+    throw new Error(`Нет данных контракта MEXC для ${symbol}`);
+  }
+
+  const vol = computeMexcVol(detail, price, marginUsdt, leverage);
+  return (vol * detail.contractSize * price) / leverage;
+}
+
 export async function closeMexcFuturesPosition(position: MexcFuturesPosition, price: number): Promise<number> {
   return submitMexcOrder({
     symbol: position.symbol,

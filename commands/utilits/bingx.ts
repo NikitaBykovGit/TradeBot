@@ -105,6 +105,22 @@ function computeBingxQuantity(contract: BingxContract, price: number, marginUsdt
   return quantity;
 }
 
+export async function estimateBingxMargin(
+  symbol: string,
+  price: number,
+  marginUsdt: number,
+  leverage: number,
+): Promise<number> {
+  const contracts = await getBingxContracts();
+  const contract = contracts.get(symbol);
+  if (!contract) {
+    throw new Error(`Нет данных контракта BingX для ${symbol}`);
+  }
+
+  const quantity = computeBingxQuantity(contract, price, marginUsdt, leverage);
+  return (quantity * price) / leverage;
+}
+
 async function setBingxLeverage(symbol: string, positionSide: 'LONG' | 'SHORT', leverage: number): Promise<void> {
   const body = await bingxSignedRequest<{ code: number; msg?: string }>(BINGX_LEVERAGE_URL, 'POST', {
     symbol,

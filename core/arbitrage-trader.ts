@@ -3,19 +3,28 @@ import { broadcastToSubscribers } from './subscribers.js';
 import { getOpenPosition, setOpenPosition, type OpenArbitragePosition } from './trading-state.js';
 import {
   getMexcContractDetails,
+  getMexcFuturesBalance,
   getMexcFuturesPositions,
   getMexcFuturesPrices,
+  estimateMexcMargin,
   openMexcFuturesPosition,
   closeMexcFuturesPosition,
+  getBingxFuturesBalance,
   getBingxFuturesPositions,
   getBingxFuturesPrices,
+  estimateBingxMargin,
   openBingxFuturesPosition,
   closeBingxFuturesPosition,
 } from '../commands/utilits/index.js';
 
 const TRADE_MARGIN_USDT = 1;
 const TRADE_LEVERAGE = 1;
+const MARGIN_SAFETY_BUFFER = 1.1;
 export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.3;
+
+// Чтобы не слать повторное уведомление о нехватке баланса на каждом опросе,
+// пока пара остаётся лучшим кандидатом на арбитраж — только при первом пропуске.
+const marginSkipNotified = new Set<string>();
 
 function toMexcSymbol(symbol: string): string {
   return symbol.replace('/', '_');
@@ -33,6 +42,42 @@ export async function openArbitrageTrade(
 ): Promise<void> {
   const mexcSymbol = toMexcSymbol(symbol);
   const bingxSymbol = toBingxSymbol(symbol);
+
+  let mexcRequiredMargin: number;
+  let bingxRequiredMargin: number;
+  let mexcBalance: number;
+  let bingxBalance: number;
+
+  try {
+    [mexcRequiredMargin, bingxRequiredMargin, mexcBalance, bingxBalance] = await Promise.all([
+      estimateMexcMargin(mexcSymbol, mexcPrice, TRADE_MARGIN_USDT, TRADE_LEVERAGE),
+      estimateBingxMargin(bingxSymbol, bingxPrice, TRADE_MARGIN_USDT, TRADE_LEVERAGE),
+      getMexcFuturesBalance(),
+      getBingxFuturesBalance(),
+    ]);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await broadcastToSubscribers(api, `❗ Не удалось проверить контракт/баланс перед арбитражем по ${symbol}: ${message}`);
+    return;
+  }
+
+  const insufficientMargin =
+    mexcBalance < mexcRequiredMargin * MARGIN_SAFETY_BUFFER ||
+    bingxBalance < bingxRequiredMargin * MARGIN_SAFETY_BUFFER;
+
+  if (insufficientMargin) {
+    if (!marginSkipNotified.has(symbol)) {
+      marginSkipNotified.add(symbol);
+      await broadcastToSubscribers(
+        api,
+        `⏭ Арбитраж по ${symbol} пропущен: недостаточно баланса под минимальный лот биржи.\n` +
+          `MEXC: нужно ≈${mexcRequiredMargin.toFixed(2)} USDT, доступно ${mexcBalance.toFixed(2)} USDT\n` +
+          `BingX: нужно ≈${bingxRequiredMargin.toFixed(2)} USDT, доступно ${bingxBalance.toFixed(2)} USDT`,
+      );
+    }
+    return;
+  }
+  marginSkipNotified.delete(symbol);
 
   const mexcIsCheaper = mexcPrice < bingxPrice;
   const mexcSide: 'long' | 'short' = mexcIsCheaper ? 'long' : 'short';
