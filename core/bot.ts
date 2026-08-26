@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { Bot, Context } from 'node-telegram-bot-api';
+import { Bot, Context, ReplyKeyboardBuilder } from 'node-telegram-bot-api';
 import { run } from 'node-telegram-bot-api/node';
 
 import { Balance, Status } from '#commands';
@@ -17,12 +17,18 @@ if (!token) {
 
 const bot = new Bot(token);
 
+const mainKeyboard = new ReplyKeyboardBuilder()
+  .text('/balance')
+  .text('/status')
+  .build({ resize_keyboard: true, is_persistent: true });
+
 bot.command('start', async (ctx: Context) => {
   if (ctx.chatId !== undefined) {
     await addSubscriber(ctx.chatId);
   }
   await ctx.reply(
     'Привет! Я пришлю уведомление о каждой спотовой сделке на MEXC, а также об арбитражных возможностях между фьючерсами MEXC и BingX.',
+    { reply_markup: mainKeyboard },
   );
 });
 
