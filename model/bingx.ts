@@ -14,3 +14,21 @@ export interface BingxBalanceResponse {
     };
   };
 }
+
+export interface BingxPosition {
+  positionId: string;
+  symbol: string;
+  positionSide: string;
+  isolated: boolean;
+  positionAmt: string;
+  avgPrice: string;
+  leverage: number;
+  unrealizedProfit: string;
+  liquidationPrice: number;
+}
+
+export interface BingxPositionsResponse {
+  code: number;
+  msg?: string;
+  data?: BingxPosition[];
+}

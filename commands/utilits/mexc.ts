@@ -1,8 +1,16 @@
 import crypto from 'node:crypto';
-import type { MexcAccountResponse, MexcBalance } from '../../model';
+import type {
+  MexcAccountResponse,
+  MexcBalance,
+  MexcFuturesAssetsResponse,
+  MexcFuturesPosition,
+  MexcFuturesPositionsResponse,
+} from '../../model';
 
 const mexcApiKey = process.env.MEXC_API_KEY;
 const mexcApiSecret = process.env.MEXC_API_SECRET;
+const MEXC_FUTURES_ASSETS_URL = 'https://contract.mexc.com/api/v1/private/account/assets';
+const MEXC_FUTURES_POSITIONS_URL = 'https://contract.mexc.com/api/v1/private/position/open_positions';
 
 async function getMexcServerTime(): Promise<number> {
   const res = await fetch('https://api.mexc.com/api/v3/time');
@@ -40,6 +48,36 @@ async function mexcSignedRequest<T>(
 export async function getMexcBalance(): Promise<MexcBalance[]> {
   const data = await mexcSignedRequest<MexcAccountResponse>('GET', '/api/v3/account');
   return data.balances.filter((b) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0);
+}
+
+function mexcFuturesSignedHeaders(): Record<string, string> {
+  if (!mexcApiKey || !mexcApiSecret) {
+    throw new Error('MEXC_API_KEY и MEXC_API_SECRET не заданы в .env');
+  }
+
+  const timestamp = String(Date.now());
+  const signature = crypto.createHmac('sha256', mexcApiSecret).update(`${mexcApiKey}${timestamp}`).digest('hex');
+  return { ApiKey: mexcApiKey, 'Request-Time': timestamp, Signature: signature };
+}
+
+export async function getMexcFuturesBalance(): Promise<number> {
+  const res = await fetch(MEXC_FUTURES_ASSETS_URL, { headers: mexcFuturesSignedHeaders() });
+  const body = (await res.json()) as MexcFuturesAssetsResponse;
+  if (!body.success) {
+    throw new Error(`Ошибка MEXC Futures API (код ${body.code ?? res.status})`);
+  }
+
+  return (body.data ?? []).find((asset) => asset.currency === 'USDT')?.availableBalance ?? 0;
+}
+
+export async function getMexcFuturesPositions(): Promise<MexcFuturesPosition[]> {
+  const res = await fetch(MEXC_FUTURES_POSITIONS_URL, { headers: mexcFuturesSignedHeaders() });
+  const body = (await res.json()) as MexcFuturesPositionsResponse;
+  if (!body.success) {
+    throw new Error(`Ошибка MEXC Futures API (код ${body.code ?? res.status})`);
+  }
+
+  return body.data ?? [];
 }
 
 export async function createListenKey(): Promise<string> {

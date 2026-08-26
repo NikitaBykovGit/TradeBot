@@ -1,28 +1,15 @@
-import crypto from 'node:crypto';
 import type { Bot } from 'node-telegram-bot-api';
 import { getSubscribers } from './subscribers.js';
-import type {
-  MexcTickerResponse,
-  MexcDetailResponse,
-  MexcFuturesAssetsResponse,
-  BingxTickerResponse,
-  BingxBalanceResponse,
-} from '../model';
+import { getMexcFuturesBalance, getBingxFuturesBalance } from '../commands/utilits/index.js';
+import type { MexcTickerResponse, MexcDetailResponse, BingxTickerResponse } from '../model';
 
 const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
 const MEXC_DETAIL_URL = 'https://contract.mexc.com/api/v1/contract/detail';
-const MEXC_ASSETS_URL = 'https://contract.mexc.com/api/v1/private/account/assets';
 const BINGX_TICKER_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/ticker';
-const BINGX_BALANCE_URL = 'https://open-api.bingx.com/openApi/swap/v2/user/balance';
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
 const DEFAULT_THRESHOLD_PERCENT = 2;
 const MEXC_ALLOWED_SYMBOLS_TTL_MS = 30 * 60_000;
 const MIN_FUTURES_BALANCE_USDT = 1;
-
-const mexcApiKey = process.env.MEXC_API_KEY;
-const mexcApiSecret = process.env.MEXC_API_SECRET;
-const bingxApiKey = process.env.BINGX_API_KEY;
-const bingxApiSecret = process.env.BINGX_API_SECRET;
 
 let mexcAllowedSymbolsCache: { symbols: Set<string>; fetchedAt: number } | null = null;
 
@@ -77,51 +64,8 @@ async function fetchBingxFuturesPrices(): Promise<Map<string, number>> {
   return prices;
 }
 
-async function fetchMexcFuturesUsdtBalance(): Promise<number> {
-  if (!mexcApiKey || !mexcApiSecret) {
-    throw new Error('MEXC_API_KEY и MEXC_API_SECRET не заданы в .env');
-  }
-
-  const timestamp = String(Date.now());
-  const signature = crypto.createHmac('sha256', mexcApiSecret).update(`${mexcApiKey}${timestamp}`).digest('hex');
-
-  const res = await fetch(MEXC_ASSETS_URL, {
-    headers: { ApiKey: mexcApiKey, 'Request-Time': timestamp, Signature: signature },
-  });
-
-  const body = (await res.json()) as MexcFuturesAssetsResponse;
-  if (!body.success) {
-    throw new Error(`Ошибка MEXC Futures API (код ${body.code ?? res.status})`);
-  }
-
-  return (body.data ?? []).find((asset) => asset.currency === 'USDT')?.availableBalance ?? 0;
-}
-
-async function fetchBingxFuturesUsdtBalance(): Promise<number> {
-  if (!bingxApiKey || !bingxApiSecret) {
-    throw new Error('BINGX_API_KEY и BINGX_API_SECRET не заданы в .env');
-  }
-
-  const query = `timestamp=${Date.now()}`;
-  const signature = crypto.createHmac('sha256', bingxApiSecret).update(query).digest('hex');
-
-  const res = await fetch(`${BINGX_BALANCE_URL}?${query}&signature=${signature}`, {
-    headers: { 'X-BX-APIKEY': bingxApiKey },
-  });
-
-  const body = (await res.json()) as BingxBalanceResponse;
-  if (body.code !== 0) {
-    throw new Error(`Ошибка BingX Futures API: ${body.msg || body.code}`);
-  }
-
-  return Number(body.data?.balance?.availableMargin ?? 0);
-}
-
 async function getFuturesBalancesInfo(): Promise<string> {
-  const [mexcResult, bingxResult] = await Promise.allSettled([
-    fetchMexcFuturesUsdtBalance(),
-    fetchBingxFuturesUsdtBalance(),
-  ]);
+  const [mexcResult, bingxResult] = await Promise.allSettled([getMexcFuturesBalance(), getBingxFuturesBalance()]);
 
   const lines: string[] = [];
 

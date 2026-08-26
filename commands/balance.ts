@@ -1,23 +1,27 @@
 import type { Context } from 'node-telegram-bot-api';
 import { Command } from './abstract.js';
-import { getMexcBalance } from './utilits/index.js';
+import { getMexcFuturesBalance, getBingxFuturesBalance } from './utilits/index.js';
 
 export class Balance extends Command {
   async run(ctx: Context): Promise<void> {
-    try {
-      const balances = await getMexcBalance();
-      if (balances.length === 0) {
-        await ctx.reply('Баланс пуст.');
-        return;
-      }
+    const [mexcResult, bingxResult] = await Promise.allSettled([getMexcFuturesBalance(), getBingxFuturesBalance()]);
 
-      const text = balances
-        .map((b) => `${b.asset}: ${b.free}${parseFloat(b.locked) > 0 ? ` (в ордерах: ${b.locked})` : ''}`)
-        .join('\n');
-      await ctx.reply(`Баланс MEXC:\n${text}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      await ctx.reply(`Не удалось получить баланс: ${message}`);
+    const lines: string[] = [];
+
+    if (mexcResult.status === 'fulfilled') {
+      lines.push(`MEXC: ${mexcResult.value.toFixed(2)} USDT`);
+    } else {
+      const message = mexcResult.reason instanceof Error ? mexcResult.reason.message : String(mexcResult.reason);
+      lines.push(`❗ MEXC: не удалось получить баланс (${message})`);
     }
+
+    if (bingxResult.status === 'fulfilled') {
+      lines.push(`BingX: ${bingxResult.value.toFixed(2)} USDT`);
+    } else {
+      const message = bingxResult.reason instanceof Error ? bingxResult.reason.message : String(bingxResult.reason);
+      lines.push(`❗ BingX: не удалось получить баланс (${message})`);
+    }
+
+    await ctx.reply(`Баланс фьючерсов:\n${lines.join('\n')}`);
   }
 }

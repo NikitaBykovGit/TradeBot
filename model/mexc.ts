@@ -39,6 +39,25 @@ export interface MexcFuturesAssetsResponse {
   data?: Array<{ currency: string; availableBalance: number }>;
 }
 
+export interface MexcFuturesPosition {
+  positionId: number;
+  symbol: string;
+  positionType: number;
+  openType: number;
+  holdVol: number;
+  openAvgPrice: number;
+  holdAvgPrice: number;
+  liquidatePrice: number;
+  leverage: number;
+  realised: number;
+}
+
+export interface MexcFuturesPositionsResponse {
+  success: boolean;
+  code?: number;
+  data?: MexcFuturesPosition[];
+}
+
 export interface MexcPrivateDealsPayload {
   price: string;
   quantity: string;

@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { Bot, Context } from 'node-telegram-bot-api';
 import { run } from 'node-telegram-bot-api/node';
 
-import { Balance } from '#commands';
+import { Balance, Status } from '#commands';
 import { addSubscriber } from './subscribers.js';
 import { startTradeWatcher } from './trade-watcher.js';
 // import { startArbitrageWatcher } from './arbitrage-watcher.js'; // временно отключено
@@ -28,6 +28,11 @@ bot.command('start', async (ctx: Context) => {
 
 bot.command('balance', async (ctx: Context) => {
   const command = new Balance();
+  await command.run(ctx);
+});
+
+bot.command('status', async (ctx: Context) => {
+  const command = new Status();
   await command.run(ctx);
 });
 
