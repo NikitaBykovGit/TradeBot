@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import type { Api } from 'node-telegram-bot-api';
 
 const STORE_PATH = path.resolve(process.cwd(), 'data', 'subscribers.json');
 
@@ -28,4 +29,16 @@ export async function addSubscriber(chatId: number): Promise<void> {
 
 export async function getSubscribers(): Promise<number[]> {
   return readSubscribers();
+}
+
+export async function broadcastToSubscribers(api: Api, text: string): Promise<void> {
+  const chatIds = await getSubscribers();
+
+  for (const chatId of chatIds) {
+    try {
+      await api.sendMessage({ chat_id: chatId, text });
+    } catch (err) {
+      console.error(`Не удалось отправить уведомление в чат ${chatId}:`, err instanceof Error ? err.message : err);
+    }
+  }
 }

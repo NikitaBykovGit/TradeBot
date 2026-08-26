@@ -28,9 +28,20 @@ export interface MexcTickerResponse {
   data: Array<{ symbol: string; lastPrice: number }>;
 }
 
+export interface MexcContractDetail {
+  symbol: string;
+  apiAllowed: boolean;
+  contractSize: number;
+  minVol: number;
+  maxVol: number;
+  volScale: number;
+  priceScale: number;
+  maxLeverage: number;
+}
+
 export interface MexcDetailResponse {
   success: boolean;
-  data: Array<{ symbol: string; apiAllowed: boolean }>;
+  data: MexcContractDetail[];
 }
 
 export interface MexcFuturesAssetsResponse {
@@ -56,6 +67,12 @@ export interface MexcFuturesPositionsResponse {
   success: boolean;
   code?: number;
   data?: MexcFuturesPosition[];
+}
+
+export interface MexcOrderSubmitResponse {
+  success: boolean;
+  code?: number;
+  data?: number | null;
 }
 
 export interface MexcPrivateDealsPayload {

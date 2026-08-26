@@ -32,3 +32,17 @@ export interface BingxPositionsResponse {
   msg?: string;
   data?: BingxPosition[];
 }
+
+export interface BingxContract {
+  symbol: string;
+  quantityPrecision: number;
+  pricePrecision: number;
+  tradeMinQuantity: number;
+  tradeMinUSDT: number;
+}
+
+export interface BingxContractsResponse {
+  code: number;
+  msg?: string;
+  data?: BingxContract[];
+}

@@ -3,12 +3,13 @@ import 'dotenv/config';
 import { Bot, Context, ReplyKeyboardBuilder } from 'node-telegram-bot-api';
 import { run } from 'node-telegram-bot-api/node';
 
-import { Balance, Status } from '#commands';
+import { Balance, Status, Trade, Stop } from '#commands';
 import { addSubscriber } from './subscribers.js';
 import { startTradeWatcher } from './trade-watcher.js';
-// import { startArbitrageWatcher } from './arbitrage-watcher.js'; // временно отключено
+import { startArbitrageWatcher } from './arbitrage-watcher.js';
 
 const token = process.env.BOT_TOKEN;
+const ALLOWED_USERNAME = 'n1k1tabykov';
 
 if (!token) {
   console.error('BOT_TOKEN не задан. Укажите его в файле .env');
@@ -16,6 +17,18 @@ if (!token) {
 }
 
 const bot = new Bot(token);
+
+bot.use(async (ctx, next) => {
+  const username = ctx.from?.username?.toLowerCase();
+  if (username !== ALLOWED_USERNAME) {
+    if (ctx.chat) {
+      await ctx.reply('Бот недоступен.');
+    }
+    return;
+  }
+
+  await next();
+});
 
 const mainKeyboard = new ReplyKeyboardBuilder()
   .text('/balance')
@@ -42,9 +55,18 @@ bot.command('status', async (ctx: Context) => {
   await command.run(ctx);
 });
 
+bot.command('trade', async (ctx: Context) => {
+  const command = new Trade();
+  await command.run(ctx);
+});
+
+bot.command('stop', async (ctx: Context) => {
+  const command = new Stop();
+  await command.run(ctx);
+});
+
 startTradeWatcher(bot);
-// TODO: временно отключено
-// startArbitrageWatcher(bot);
+startArbitrageWatcher(bot);
 
 bot.catch((err) => {
   console.error('Bot error:', err);
