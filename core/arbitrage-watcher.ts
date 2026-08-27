@@ -3,7 +3,7 @@ import { getOpenPosition, isTradingEnabled } from './trading-state.js';
 import { openArbitrageTrade, tryCloseArbitrageTrade } from './arbitrage-trader.js';
 import { getMexcFuturesPrices, getBingxFuturesPrices } from '../commands/utilits/index.js';
 
-const DEFAULT_POLL_INTERVAL_MS = 60_000;
+const DEFAULT_POLL_INTERVAL_MS = 15_000;
 const DEFAULT_THRESHOLD_PERCENT = 2;
 
 export function startArbitrageWatcher(bot: Bot): void {

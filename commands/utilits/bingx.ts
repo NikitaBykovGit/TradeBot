@@ -150,7 +150,6 @@ async function placeBingxOrder(params: {
   side: 'BUY' | 'SELL';
   positionSide: 'LONG' | 'SHORT';
   quantity?: number;
-  closePosition?: boolean;
 }): Promise<void> {
   const query: Record<string, string> = {
     symbol: params.symbol,
@@ -160,9 +159,6 @@ async function placeBingxOrder(params: {
   };
   if (params.quantity !== undefined) {
     query.quantity = String(params.quantity);
-  }
-  if (params.closePosition) {
-    query.closePosition = 'true';
   }
 
   const body = await bingxSignedRequest<{ code: number; msg?: string }>(BINGX_ORDER_URL, 'POST', query);
@@ -198,12 +194,27 @@ export async function openBingxFuturesPosition(
   return { quantity };
 }
 
-export async function closeBingxFuturesPosition(symbol: string, side: 'long' | 'short'): Promise<void> {
+export async function closeBingxFuturesPosition(
+  symbol: string,
+  side: 'long' | 'short',
+  quantity?: number,
+): Promise<void> {
   const positionSide = side === 'long' ? 'LONG' : 'SHORT';
+
+  let closeQuantity = quantity;
+  if (closeQuantity === undefined) {
+    const positions = await getBingxFuturesPositions();
+    const position = positions.find((p) => p.symbol === symbol);
+    if (!position) {
+      throw new Error(`Позиция BingX для ${symbol} не найдена при закрытии`);
+    }
+    closeQuantity = Math.abs(Number(position.positionAmt));
+  }
+
   await placeBingxOrder({
     symbol,
     side: side === 'long' ? 'SELL' : 'BUY',
     positionSide,
-    closePosition: true,
+    quantity: closeQuantity,
   });
 }

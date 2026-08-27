@@ -234,7 +234,7 @@ export async function closeArbitrageTrade(
       const baseQty = Math.abs(Number(bingxPosition.positionAmt));
       const entryPrice = Number(bingxPosition.avgPrice);
 
-      await closeBingxFuturesPosition(position.bingxSymbol, bingxSide);
+      await closeBingxFuturesPosition(position.bingxSymbol, bingxSide, baseQty);
 
       profitUsdt += bingxSide === 'long' ? baseQty * (bingxPrice - entryPrice) : baseQty * (entryPrice - bingxPrice);
     } else {
