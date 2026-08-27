@@ -6,12 +6,14 @@ import {
   getMexcFuturesBalance,
   getMexcFuturesPositions,
   getMexcFuturesPrices,
+  getMexcFundingRate,
   estimateMexcMargin,
   openMexcFuturesPosition,
   closeMexcFuturesPosition,
   getBingxFuturesBalance,
   getBingxFuturesPositions,
   getBingxFuturesPrices,
+  getBingxFundingRate,
   estimateBingxMargin,
   openBingxFuturesPosition,
   closeBingxFuturesPosition,
@@ -22,9 +24,15 @@ const TRADE_LEVERAGE = 1;
 const MARGIN_SAFETY_BUFFER = 1.1;
 export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.3;
 
+// Максимально допустимый чистый funding против позиции (в % за один период начисления),
+// при превышении которого сделка пропускается — funding платится/начисляется на биржах
+// независимо от схождения ценового спреда и может съесть весь профит арбитража.
+const MAX_UNFAVORABLE_FUNDING_PERCENT = Number(process.env.ARBITRAGE_MAX_UNFAVORABLE_FUNDING_PERCENT) || 0.5;
+
 // Чтобы не слать повторное уведомление о нехватке баланса на каждом опросе,
 // пока пара остаётся лучшим кандидатом на арбитраж — только при первом пропуске.
 const marginSkipNotified = new Set<string>();
+const fundingSkipNotified = new Set<string>();
 
 function toMexcSymbol(symbol: string): string {
   return symbol.replace('/', '_');
@@ -86,6 +94,39 @@ export async function openArbitrageTrade(
   const shortExchange: 'MEXC' | 'BingX' = mexcIsCheaper ? 'BingX' : 'MEXC';
   const entryLongPrice = mexcIsCheaper ? mexcPrice : bingxPrice;
   const entryShortPrice = mexcIsCheaper ? bingxPrice : mexcPrice;
+
+  let mexcFundingRate: number;
+  let bingxFundingRate: number;
+
+  try {
+    [mexcFundingRate, bingxFundingRate] = await Promise.all([
+      getMexcFundingRate(mexcSymbol),
+      getBingxFundingRate(bingxSymbol),
+    ]);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await broadcastToSubscribers(api, `❗ Не удалось проверить funding rate перед арбитражем по ${symbol}: ${message}`);
+    return;
+  }
+
+  // На шорте funding получаешь, на лонге — платишь (при положительной ставке), поэтому
+  // чистый ожидаемый funding за период = ставка биржи шорта минус ставка биржи лонга.
+  const shortFundingRate = shortExchange === 'MEXC' ? mexcFundingRate : bingxFundingRate;
+  const longFundingRate = longExchange === 'MEXC' ? mexcFundingRate : bingxFundingRate;
+  const netFundingPercent = (shortFundingRate - longFundingRate) * 100;
+
+  if (netFundingPercent < -MAX_UNFAVORABLE_FUNDING_PERCENT) {
+    if (!fundingSkipNotified.has(symbol)) {
+      fundingSkipNotified.add(symbol);
+      await broadcastToSubscribers(
+        api,
+        `⏭ Арбитраж по ${symbol} пропущен: funding сильно невыгоден (${netFundingPercent.toFixed(4)}% за период, лимит -${MAX_UNFAVORABLE_FUNDING_PERCENT}%).\n` +
+          `Лонг ${longExchange}: ${(longFundingRate * 100).toFixed(4)}%, шорт ${shortExchange}: ${(shortFundingRate * 100).toFixed(4)}%`,
+      );
+    }
+    return;
+  }
+  fundingSkipNotified.delete(symbol);
 
   let mexcOpened = false;
   let bingxOpened = false;

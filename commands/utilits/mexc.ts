@@ -4,6 +4,7 @@ import type {
   MexcBalance,
   MexcContractDetail,
   MexcDetailResponse,
+  MexcFundingRateResponse,
   MexcFuturesAssetsResponse,
   MexcFuturesPosition,
   MexcFuturesPositionsResponse,
@@ -18,6 +19,7 @@ const MEXC_FUTURES_POSITIONS_URL = 'https://contract.mexc.com/api/v1/private/pos
 const MEXC_ORDER_SUBMIT_URL = 'https://contract.mexc.com/api/v1/private/order/submit';
 const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
 const MEXC_DETAIL_URL = 'https://contract.mexc.com/api/v1/contract/detail';
+const MEXC_FUNDING_RATE_URL = 'https://contract.mexc.com/api/v1/contract/funding_rate';
 const MEXC_CONTRACT_DETAIL_TTL_MS = 30 * 60_000;
 
 let mexcContractDetailCache: { data: Map<string, MexcContractDetail>; fetchedAt: number } | null = null;
@@ -105,6 +107,16 @@ export async function getMexcFuturesPrices(): Promise<Map<string, number>> {
   }
 
   return prices;
+}
+
+export async function getMexcFundingRate(symbol: string): Promise<number> {
+  const res = await fetch(`${MEXC_FUNDING_RATE_URL}/${symbol}`);
+  const body = (await res.json()) as MexcFundingRateResponse;
+  if (!body.success || body.data === undefined) {
+    throw new Error(`Ошибка MEXC Futures API при получении funding rate (код ${body.code ?? res.status})`);
+  }
+
+  return body.data.fundingRate;
 }
 
 interface MexcOrderRequest {

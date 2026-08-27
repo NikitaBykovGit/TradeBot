@@ -5,6 +5,7 @@ import type {
   BingxContractsResponse,
   BingxPosition,
   BingxPositionsResponse,
+  BingxPremiumIndexResponse,
   BingxTickerResponse,
 } from '../../model';
 
@@ -14,6 +15,7 @@ const BINGX_BALANCE_URL = 'https://open-api.bingx.com/openApi/swap/v2/user/balan
 const BINGX_POSITIONS_URL = 'https://open-api.bingx.com/openApi/swap/v2/user/positions';
 const BINGX_TICKER_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/ticker';
 const BINGX_CONTRACTS_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/contracts';
+const BINGX_PREMIUM_INDEX_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/premiumIndex';
 const BINGX_LEVERAGE_URL = 'https://open-api.bingx.com/openApi/swap/v2/trade/leverage';
 const BINGX_ORDER_URL = 'https://open-api.bingx.com/openApi/swap/v2/trade/order';
 const BINGX_CONTRACTS_TTL_MS = 30 * 60_000;
@@ -88,6 +90,16 @@ export async function getBingxFuturesPrices(): Promise<Map<string, number>> {
   }
 
   return prices;
+}
+
+export async function getBingxFundingRate(symbol: string): Promise<number> {
+  const res = await fetch(`${BINGX_PREMIUM_INDEX_URL}?symbol=${symbol}`);
+  const body = (await res.json()) as BingxPremiumIndexResponse;
+  if (body.code !== 0 || !body.data) {
+    throw new Error(`Ошибка BingX Futures API при получении funding rate: ${body.msg || body.code}`);
+  }
+
+  return Number(body.data.lastFundingRate);
 }
 
 function computeBingxQuantity(contract: BingxContract, price: number, marginUsdt: number, leverage: number): number {

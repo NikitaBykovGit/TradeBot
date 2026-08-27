@@ -44,6 +44,16 @@ export interface MexcDetailResponse {
   data: MexcContractDetail[];
 }
 
+export interface MexcFundingRateResponse {
+  success: boolean;
+  code?: number;
+  data?: {
+    symbol: string;
+    fundingRate: number;
+    nextSettleTime: number;
+  };
+}
+
 export interface MexcFuturesAssetsResponse {
   success: boolean;
   code?: number;

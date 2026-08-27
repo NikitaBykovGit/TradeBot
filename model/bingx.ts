@@ -33,6 +33,16 @@ export interface BingxPositionsResponse {
   data?: BingxPosition[];
 }
 
+export interface BingxPremiumIndexResponse {
+  code: number;
+  msg?: string;
+  data?: {
+    symbol: string;
+    lastFundingRate: string;
+    nextFundingTime: number;
+  };
+}
+
 export interface BingxContract {
   symbol: string;
   quantityPrecision: number;
