@@ -5,8 +5,10 @@ import {
   getBingxFuturesPositions,
   getMexcFuturesPrices,
   getBingxFuturesPrices,
+  getMexcContractDetails,
 } from './utilits/index.js';
 import type { MexcFuturesPosition, BingxPosition } from '../model';
+import { getOpenPosition, type OpenArbitragePosition } from '../core/trading-state.js';
 
 function formatMexcPosition(position: MexcFuturesPosition, prices: Map<string, number>): string {
   const side = position.positionType === 1 ? 'LONG' : 'SHORT';
@@ -29,14 +31,55 @@ function formatBingxPosition(position: BingxPosition, prices: Map<string, number
   );
 }
 
+function calculateArbitrageClosePnl(
+  position: OpenArbitragePosition,
+  mexcPositions: MexcFuturesPosition[],
+  bingxPositions: BingxPosition[],
+  mexcContractSize: number,
+  mexcPrice: number | undefined,
+  bingxPrice: number | undefined,
+): { pnl: number; missing: string[] } {
+  const mexcSide: 'long' | 'short' = position.longExchange === 'MEXC' ? 'long' : 'short';
+  const bingxSide: 'long' | 'short' = position.longExchange === 'BingX' ? 'long' : 'short';
+
+  let pnl = 0;
+  const missing: string[] = [];
+
+  const mexcPosition = mexcPositions.find((p) => p.symbol === position.mexcSymbol);
+  if (mexcPosition && mexcPrice !== undefined) {
+    const baseQty = mexcPosition.holdVol * mexcContractSize;
+    pnl +=
+      mexcSide === 'long'
+        ? baseQty * (mexcPrice - mexcPosition.holdAvgPrice)
+        : baseQty * (mexcPosition.holdAvgPrice - mexcPrice);
+  } else {
+    missing.push('MEXC');
+  }
+
+  const bingxPosition = bingxPositions.find((p) => p.symbol === position.bingxSymbol);
+  if (bingxPosition && bingxPrice !== undefined) {
+    const baseQty = Math.abs(Number(bingxPosition.positionAmt));
+    const entryPrice = Number(bingxPosition.avgPrice);
+    pnl += bingxSide === 'long' ? baseQty * (bingxPrice - entryPrice) : baseQty * (entryPrice - bingxPrice);
+  } else {
+    missing.push('BingX');
+  }
+
+  return { pnl, missing };
+}
+
 export class Status extends Command {
   async run(ctx: Context): Promise<void> {
-    const [mexcResult, bingxResult, mexcPricesResult, bingxPricesResult] = await Promise.allSettled([
-      getMexcFuturesPositions(),
-      getBingxFuturesPositions(),
-      getMexcFuturesPrices(),
-      getBingxFuturesPrices(),
-    ]);
+    const openPosition = getOpenPosition();
+
+    const [mexcResult, bingxResult, mexcPricesResult, bingxPricesResult, mexcContractsResult] =
+      await Promise.allSettled([
+        getMexcFuturesPositions(),
+        getBingxFuturesPositions(),
+        getMexcFuturesPrices(),
+        getBingxFuturesPrices(),
+        openPosition ? getMexcContractDetails() : Promise.resolve(new Map()),
+      ]);
 
     const mexcPrices = mexcPricesResult.status === 'fulfilled' ? mexcPricesResult.value : new Map<string, number>();
     const bingxPrices = bingxPricesResult.status === 'fulfilled' ? bingxPricesResult.value : new Map<string, number>();
@@ -63,6 +106,31 @@ export class Status extends Command {
     } else {
       const message = bingxResult.reason instanceof Error ? bingxResult.reason.message : String(bingxResult.reason);
       sections.push(`❗ BingX: не удалось получить позиции (${message})`);
+    }
+
+    if (openPosition) {
+      if (mexcResult.status === 'fulfilled' && bingxResult.status === 'fulfilled') {
+        const mexcContractSize =
+          mexcContractsResult.status === 'fulfilled'
+            ? (mexcContractsResult.value.get(openPosition.mexcSymbol)?.contractSize ?? 1)
+            : 1;
+        const { pnl, missing } = calculateArbitrageClosePnl(
+          openPosition,
+          mexcResult.value,
+          bingxResult.value,
+          mexcContractSize,
+          mexcPrices.get(openPosition.symbol),
+          bingxPrices.get(openPosition.symbol),
+        );
+
+        if (missing.length === 0) {
+          sections.push(`💰 PnL при закрытии сейчас (/stop): ${pnl.toFixed(4)} USDT (без учёта комиссий)`);
+        } else {
+          sections.push(`💰 PnL при закрытии сейчас: не удалось оценить (нет данных: ${missing.join(', ')})`);
+        }
+      } else {
+        sections.push('💰 PnL при закрытии сейчас: не удалось оценить (нет данных о позициях)');
+      }
     }
 
     await ctx.reply(sections.join('\n\n'));

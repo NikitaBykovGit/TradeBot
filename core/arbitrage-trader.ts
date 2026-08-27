@@ -22,7 +22,7 @@ import {
 const TRADE_MARGIN_USDT = 1;
 const TRADE_LEVERAGE = 2;
 const MARGIN_SAFETY_BUFFER = 1.1;
-export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.3;
+export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.6;
 
 // Максимально допустимый чистый funding против позиции (в % за один период начисления),
 // при превышении которого сделка пропускается — funding платится/начисляется на биржах
@@ -268,7 +268,13 @@ export async function tryCloseArbitrageTrade(api: Api, mexcPrice: number, bingxP
   const diffPercent = (Math.abs(mexcPrice - bingxPrice) / Math.min(mexcPrice, bingxPrice)) * 100;
   if (diffPercent >= CLOSE_DIFF_THRESHOLD_PERCENT) return false;
 
-  await closeArbitrageTrade(api, position, mexcPrice, bingxPrice, 'разница цен опустилась ниже 0.3%');
+  await closeArbitrageTrade(
+    api,
+    position,
+    mexcPrice,
+    bingxPrice,
+    `разница цен опустилась ниже ${CLOSE_DIFF_THRESHOLD_PERCENT}%`,
+  );
   return true;
 }
 
