@@ -109,6 +109,23 @@ export async function getMexcFuturesPrices(): Promise<Map<string, number>> {
   return prices;
 }
 
+export async function getMexcFuturesVolumes(): Promise<Map<string, number>> {
+  const [res, details] = await Promise.all([fetch(MEXC_TICKER_URL), getMexcContractDetails()]);
+  const body = (await res.json()) as MexcTickerResponse;
+  const volumes = new Map<string, number>();
+
+  for (const ticker of body.data ?? []) {
+    if (!details.get(ticker.symbol)?.apiAllowed) continue;
+
+    const volume = Number(ticker.amount24);
+    if (volume >= 0) {
+      volumes.set(ticker.symbol.replace('_', '/'), volume);
+    }
+  }
+
+  return volumes;
+}
+
 export async function getMexcFundingRate(symbol: string): Promise<number> {
   const res = await fetch(`${MEXC_FUNDING_RATE_URL}/${symbol}`);
   const body = (await res.json()) as MexcFundingRateResponse;

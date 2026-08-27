@@ -25,7 +25,7 @@ export interface MexcTrade {
 
 export interface MexcTickerResponse {
   success: boolean;
-  data: Array<{ symbol: string; lastPrice: number }>;
+  data: Array<{ symbol: string; lastPrice: number; amount24: number }>;
 }
 
 export interface MexcContractDetail {

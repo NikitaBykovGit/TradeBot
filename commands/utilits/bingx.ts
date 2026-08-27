@@ -92,6 +92,21 @@ export async function getBingxFuturesPrices(): Promise<Map<string, number>> {
   return prices;
 }
 
+export async function getBingxFuturesVolumes(): Promise<Map<string, number>> {
+  const res = await fetch(BINGX_TICKER_URL);
+  const body = (await res.json()) as BingxTickerResponse;
+  const volumes = new Map<string, number>();
+
+  for (const ticker of body.data ?? []) {
+    const volume = Number(ticker.quoteVolume);
+    if (volume >= 0) {
+      volumes.set(ticker.symbol.replace('-', '/'), volume);
+    }
+  }
+
+  return volumes;
+}
+
 export async function getBingxFundingRate(symbol: string): Promise<number> {
   const res = await fetch(`${BINGX_PREMIUM_INDEX_URL}?symbol=${symbol}`);
   const body = (await res.json()) as BingxPremiumIndexResponse;

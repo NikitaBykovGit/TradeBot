@@ -1,6 +1,6 @@
 export interface BingxTickerResponse {
   code: number;
-  data: Array<{ symbol: string; lastPrice: string }>;
+  data: Array<{ symbol: string; lastPrice: string; quoteVolume: string }>;
 }
 
 export interface BingxBalanceResponse {

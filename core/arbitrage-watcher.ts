@@ -1,14 +1,24 @@
 import type { Bot } from 'node-telegram-bot-api';
 import { getOpenPosition, isTradingEnabled } from './trading-state.js';
 import { openArbitrageTrade, tryCloseArbitrageTrade } from './arbitrage-trader.js';
-import { getMexcFuturesPrices, getBingxFuturesPrices } from '../commands/utilits/index.js';
+import {
+  getMexcFuturesPrices,
+  getBingxFuturesPrices,
+  getMexcFuturesVolumes,
+  getBingxFuturesVolumes,
+} from '../commands/utilits/index.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 const DEFAULT_THRESHOLD_PERCENT = 2;
+// Отсекает низколиквидные монеты, на которых расхождение тикерных цен — это рыночный
+// шум тонкого стакана, а не реальная арбитражная возможность (сделка не сходится и
+// зависает на неопределённое время). Порог — суточный оборот в USDT на КАЖДОЙ бирже.
+const DEFAULT_MIN_VOLUME_USDT = 500_000;
 
 export function startArbitrageWatcher(bot: Bot): void {
   const pollIntervalMs = Number(process.env.ARBITRAGE_POLL_INTERVAL_MS) || DEFAULT_POLL_INTERVAL_MS;
   const thresholdPercent = Number(process.env.ARBITRAGE_THRESHOLD_PERCENT) || DEFAULT_THRESHOLD_PERCENT;
+  const minVolumeUsdt = Number(process.env.ARBITRAGE_MIN_VOLUME_USDT) || DEFAULT_MIN_VOLUME_USDT;
 
   let isBusy = false;
 
@@ -44,6 +54,16 @@ export function startArbitrageWatcher(bot: Bot): void {
         return;
       }
 
+      let mexcVolumes: Map<string, number>;
+      let bingxVolumes: Map<string, number>;
+
+      try {
+        [mexcVolumes, bingxVolumes] = await Promise.all([getMexcFuturesVolumes(), getBingxFuturesVolumes()]);
+      } catch (err) {
+        console.error('Ошибка получения объёмов фьючерсов:', err instanceof Error ? err.message : err);
+        return;
+      }
+
       let bestSymbol: string | null = null;
       let bestDiff = 0;
       let bestMexcPrice = 0;
@@ -52,6 +72,10 @@ export function startArbitrageWatcher(bot: Bot): void {
       for (const [symbol, mexcPrice] of mexcPrices) {
         const bingxPrice = bingxPrices.get(symbol);
         if (bingxPrice === undefined) continue;
+
+        const mexcVolume = mexcVolumes.get(symbol) ?? 0;
+        const bingxVolume = bingxVolumes.get(symbol) ?? 0;
+        if (mexcVolume < minVolumeUsdt || bingxVolume < minVolumeUsdt) continue;
 
         const diffPercent = (Math.abs(mexcPrice - bingxPrice) / Math.min(mexcPrice, bingxPrice)) * 100;
         if (diffPercent >= thresholdPercent && diffPercent > bestDiff) {
@@ -71,6 +95,7 @@ export function startArbitrageWatcher(bot: Bot): void {
   }, pollIntervalMs);
 
   console.log(
-    `Слежение за арбитражем фьючерсов MEXC/BingX включено (порог ${thresholdPercent}%, опрос раз в ${pollIntervalMs / 1000} с).`,
+    `Слежение за арбитражем фьючерсов MEXC/BingX включено (порог ${thresholdPercent}%, ` +
+      `мин. суточный объём ${minVolumeUsdt} USDT, опрос раз в ${pollIntervalMs / 1000} с).`,
   );
 }
