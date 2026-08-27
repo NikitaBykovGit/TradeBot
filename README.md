@@ -21,6 +21,7 @@ Telegram-бот на [node-telegram-bot-api](https://github.com/yagop/node-teleg
 | `core/trade-watcher.ts` | WebSocket-подключение к MEXC (user data stream), декодирование protobuf-сообщений о сделках и рассылка уведомлений подписчикам. |
 | `core/mexc-ws/push-data.proto` | Минимальная protobuf-схема для декодирования сообщений MEXC WebSocket (канал приватных сделок). |
 | `core/arbitrage-watcher.ts` | Опрос публичных тикеров фьючерсов MEXC и BingX (только когда включена автоторговля или открыта позиция) и запуск открытия/закрытия арбитражной сделки. |
+| `core/config.ts` | Константы конфигурации арбитража (например, минимальный суточный объём для фильтра ликвидности). |
 | `commands/` | Классы команд (`Command` — базовый класс, `Balance` — `/balance`, `Status` — `/status`, `Trade` — `/trade`, `Stop` — `/stop`). |
 | `commands/utilits/mexc.ts` | Интеграция с MEXC Futures/Spot API: подписанные запросы (HMAC SHA256), баланс, открытые позиции, данные контрактов, открытие/закрытие ордеров, управление listenKey для user data stream. |
 | `commands/utilits/bingx.ts` | Интеграция с BingX Futures API: подписанные запросы (HMAC SHA256), баланс, открытые позиции, данные контрактов, установка плеча, открытие/закрытие ордеров. |

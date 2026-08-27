@@ -7,18 +7,14 @@ import {
   getMexcFuturesVolumes,
   getBingxFuturesVolumes,
 } from '../commands/utilits/index.js';
+import { ARBITRAGE_MIN_VOLUME_USDT } from './config.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 const DEFAULT_THRESHOLD_PERCENT = 2;
-// Отсекает низколиквидные монеты, на которых расхождение тикерных цен — это рыночный
-// шум тонкого стакана, а не реальная арбитражная возможность (сделка не сходится и
-// зависает на неопределённое время). Порог — суточный оборот в USDT на КАЖДОЙ бирже.
-const DEFAULT_MIN_VOLUME_USDT = 500_000;
 
 export function startArbitrageWatcher(bot: Bot): void {
   const pollIntervalMs = Number(process.env.ARBITRAGE_POLL_INTERVAL_MS) || DEFAULT_POLL_INTERVAL_MS;
   const thresholdPercent = Number(process.env.ARBITRAGE_THRESHOLD_PERCENT) || DEFAULT_THRESHOLD_PERCENT;
-  const minVolumeUsdt = Number(process.env.ARBITRAGE_MIN_VOLUME_USDT) || DEFAULT_MIN_VOLUME_USDT;
 
   let isBusy = false;
 
@@ -75,7 +71,7 @@ export function startArbitrageWatcher(bot: Bot): void {
 
         const mexcVolume = mexcVolumes.get(symbol) ?? 0;
         const bingxVolume = bingxVolumes.get(symbol) ?? 0;
-        if (mexcVolume < minVolumeUsdt || bingxVolume < minVolumeUsdt) continue;
+        if (mexcVolume < ARBITRAGE_MIN_VOLUME_USDT || bingxVolume < ARBITRAGE_MIN_VOLUME_USDT) continue;
 
         const diffPercent = (Math.abs(mexcPrice - bingxPrice) / Math.min(mexcPrice, bingxPrice)) * 100;
         if (diffPercent >= thresholdPercent && diffPercent > bestDiff) {
@@ -96,6 +92,6 @@ export function startArbitrageWatcher(bot: Bot): void {
 
   console.log(
     `Слежение за арбитражем фьючерсов MEXC/BingX включено (порог ${thresholdPercent}%, ` +
-      `мин. суточный объём ${minVolumeUsdt} USDT, опрос раз в ${pollIntervalMs / 1000} с).`,
+      `мин. суточный объём ${ARBITRAGE_MIN_VOLUME_USDT} USDT, опрос раз в ${pollIntervalMs / 1000} с).`,
   );
 }
