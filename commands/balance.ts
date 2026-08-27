@@ -22,6 +22,10 @@ export class Balance extends Command {
       lines.push(`❗ BingX: не удалось получить баланс (${message})`);
     }
 
+    if (mexcResult.status === 'fulfilled' && bingxResult.status === 'fulfilled') {
+      lines.push(`Итого: ${(mexcResult.value + bingxResult.value).toFixed(2)} USDT`);
+    }
+
     await ctx.reply(`Баланс фьючерсов:\n${lines.join('\n')}`);
   }
 }
