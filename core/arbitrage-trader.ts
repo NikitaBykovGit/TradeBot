@@ -199,6 +199,7 @@ export async function closeArbitrageTrade(
   mexcPrice: number,
   bingxPrice: number,
   reason: string,
+  resumeTracking = true,
 ): Promise<void> {
   const mexcSide: 'long' | 'short' = position.longExchange === 'MEXC' ? 'long' : 'short';
   const bingxSide: 'long' | 'short' = position.longExchange === 'BingX' ? 'long' : 'short';
@@ -256,7 +257,9 @@ export async function closeArbitrageTrade(
   if (errors.length > 0) {
     lines.push(`❗ Проблемы при закрытии: ${errors.join('; ')}`);
   }
-  lines.push('Слежение возобновлено по всем парам.');
+  if (resumeTracking) {
+    lines.push('Слежение возобновлено по всем парам.');
+  }
 
   await broadcastToSubscribers(api, lines.join('\n'));
 }
@@ -290,6 +293,6 @@ export async function forceCloseOpenPosition(api: Api, reason: string): Promise<
     throw new Error(`Не удалось получить текущую цену ${position.symbol} для закрытия позиции`);
   }
 
-  await closeArbitrageTrade(api, position, mexcPrice, bingxPrice, reason);
+  await closeArbitrageTrade(api, position, mexcPrice, bingxPrice, reason, false);
   return true;
 }
