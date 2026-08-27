@@ -22,7 +22,7 @@ import {
 const TRADE_MARGIN_USDT = 1;
 const TRADE_LEVERAGE = 2;
 const MARGIN_SAFETY_BUFFER = 1.1;
-export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.6;
+export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.5;
 
 // Максимально допустимый чистый funding против позиции (в % за один период начисления),
 // при превышении которого сделка пропускается — funding платится/начисляется на биржах
