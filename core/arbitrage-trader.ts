@@ -20,7 +20,7 @@ import {
 } from '../commands/utilits/index.js';
 
 const TRADE_MARGIN_USDT = 1;
-const TRADE_LEVERAGE = 1;
+const TRADE_LEVERAGE = 2;
 const MARGIN_SAFETY_BUFFER = 1.1;
 export const CLOSE_DIFF_THRESHOLD_PERCENT = 0.3;
 
