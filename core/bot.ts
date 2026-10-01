@@ -4,8 +4,6 @@ import { Bot, Context, ReplyKeyboardBuilder } from 'node-telegram-bot-api';
 import { run } from 'node-telegram-bot-api/node';
 
 import { Balance, Status, Stop } from '#commands';
-import { addSubscriber } from './subscribers.js';
-import { startTradeWatcher } from './trade-watcher.js';
 
 const token = process.env.BOT_TOKEN;
 const ALLOWED_USERNAME = 'n1k1tabykov';
@@ -36,10 +34,9 @@ const mainKeyboard = new ReplyKeyboardBuilder()
   .build({ resize_keyboard: true, is_persistent: true });
 
 bot.command('start', async (ctx: Context) => {
-  if (ctx.chatId !== undefined) {
-    await addSubscriber(ctx.chatId);
-  }
-  await ctx.reply('Привет! Я пришлю уведомление о каждой спотовой сделке на MEXC.', { reply_markup: mainKeyboard });
+  await ctx.reply('Привет! Команды: /balance — баланс фьючерсов MEXC, /status — открытые позиции, /stop — закрыть все позиции.', {
+    reply_markup: mainKeyboard,
+  });
 });
 
 bot.command('balance', async (ctx: Context) => {
@@ -56,8 +53,6 @@ bot.command('stop', async (ctx: Context) => {
   const command = new Stop();
   await command.run(ctx);
 });
-
-startTradeWatcher(bot);
 
 bot.catch((err) => {
   console.error('Bot error:', err);
