@@ -4,9 +4,7 @@ import { Bot, Context, ReplyKeyboardBuilder } from 'node-telegram-bot-api';
 import { run } from 'node-telegram-bot-api/node';
 
 import { Balance, Status, Stop } from '#commands';
-
-const token = process.env.BOT_TOKEN;
-const ALLOWED_USERNAME = 'n1k1tabykov';
+import { token, ALLOWED_USERNAME } from './constants/index.js';
 
 if (!token) {
   console.error('BOT_TOKEN не задан. Укажите его в файле .env');

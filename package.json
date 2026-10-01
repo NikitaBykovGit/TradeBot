@@ -6,8 +6,8 @@
   "type": "module",
   "imports": {
     "#commands": {
-      "development": "./commands/index.ts",
-      "default": "./dist/commands/index.js"
+      "development": "./core/commands/index.ts",
+      "default": "./dist/core/commands/index.js"
     }
   },
   "scripts": {

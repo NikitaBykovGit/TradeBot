@@ -1,7 +1,7 @@
 import type { Context } from 'node-telegram-bot-api';
 import { Command } from './abstract.js';
 import { getMexcFuturesPositions, getMexcFuturesPrices } from './utilits/index.js';
-import type { MexcFuturesPosition } from '../model';
+import type { MexcFuturesPosition } from '../model/index.js';
 
 function formatMexcPosition(position: MexcFuturesPosition, prices: Map<string, number>): string {
   const side = position.positionType === 1 ? 'LONG' : 'SHORT';

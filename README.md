@@ -15,9 +15,10 @@ Telegram-бот на [node-telegram-bot-api](https://github.com/yagop/node-teleg
 | Файл | Назначение |
 |---|---|
 | `core/bot.ts` | Точка входа: инициализация Telegram-бота и обработчики команд. |
-| `commands/` | Классы команд (`Command` — базовый класс, `Balance` — `/balance`, `Status` — `/status`, `Stop` — `/stop`). |
-| `commands/utilits/mexc.ts` | Интеграция с MEXC Futures API: подписанные запросы (HMAC SHA256), баланс, открытые позиции, цены и данные контрактов, закрытие позиций. |
-| `model/` | Общие TypeScript-типы (ответы MEXC Futures API). |
+| `core/commands/` | Классы команд (`Command` — базовый класс, `Balance` — `/balance`, `Status` — `/status`, `Stop` — `/stop`). |
+| `core/commands/utilits/mexc.ts` | Интеграция с MEXC Futures API: подписанные запросы (HMAC SHA256), баланс, открытые позиции, цены и данные контрактов, закрытие позиций. |
+| `core/model/` | Общие TypeScript-типы (ответы и запросы MEXC Futures API). |
+| `core/constants/` | Константы: токен бота и разрешённый юзернейм (`bot.ts`), ключи и URL MEXC Futures API (`mexc.ts`). |
 | `system.config.cjs` | Конфиг PM2 для запуска бота на сервере (запускает собранный `dist/core/bot.js`). |
 | `.github/workflows/deploy.yml` | GitHub Actions: деплой на VDS по SSH при пуше в `main`. |
 

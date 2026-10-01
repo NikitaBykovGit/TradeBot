@@ -5,18 +5,20 @@ import type {
   MexcFuturesAssetsResponse,
   MexcFuturesPosition,
   MexcFuturesPositionsResponse,
+  MexcOrderRequest,
   MexcOrderSubmitResponse,
   MexcTickerResponse,
-} from '../../model';
-
-const mexcApiKey = process.env.MEXC_API_KEY;
-const mexcApiSecret = process.env.MEXC_API_SECRET;
-const MEXC_FUTURES_ASSETS_URL = 'https://contract.mexc.com/api/v1/private/account/assets';
-const MEXC_FUTURES_POSITIONS_URL = 'https://contract.mexc.com/api/v1/private/position/open_positions';
-const MEXC_ORDER_SUBMIT_URL = 'https://contract.mexc.com/api/v1/private/order/submit';
-const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
-const MEXC_DETAIL_URL = 'https://contract.mexc.com/api/v1/contract/detail';
-const MEXC_CONTRACT_DETAIL_TTL_MS = 30 * 60_000;
+} from '../../model/index.js';
+import {
+  mexcApiKey,
+  mexcApiSecret,
+  MEXC_FUTURES_ASSETS_URL,
+  MEXC_FUTURES_POSITIONS_URL,
+  MEXC_ORDER_SUBMIT_URL,
+  MEXC_TICKER_URL,
+  MEXC_DETAIL_URL,
+  MEXC_CONTRACT_DETAIL_TTL_MS,
+} from '../../constants/index.js';
 
 let mexcContractDetailCache: { data: Map<string, MexcContractDetail>; fetchedAt: number } | null = null;
 
@@ -65,17 +67,6 @@ export async function getMexcFuturesPrices(): Promise<Map<string, number>> {
   }
 
   return prices;
-}
-
-interface MexcOrderRequest {
-  symbol: string;
-  price: number;
-  vol: number;
-  side: 1 | 2 | 3 | 4;
-  type: number;
-  openType: 1 | 2;
-  leverage?: number;
-  positionId?: number;
 }
 
 async function submitMexcOrder(order: MexcOrderRequest): Promise<number> {

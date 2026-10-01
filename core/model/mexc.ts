@@ -49,3 +49,14 @@ export interface MexcOrderSubmitResponse {
   code?: number;
   data?: number | null;
 }
+
+export interface MexcOrderRequest {
+  symbol: string;
+  price: number;
+  vol: number;
+  side: 1 | 2 | 3 | 4;
+  type: number;
+  openType: 1 | 2;
+  leverage?: number;
+  positionId?: number;
+}
