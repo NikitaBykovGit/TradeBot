@@ -3,10 +3,9 @@ import 'dotenv/config';
 import { Bot, Context, ReplyKeyboardBuilder } from 'node-telegram-bot-api';
 import { run } from 'node-telegram-bot-api/node';
 
-import { Balance, Status, Trade, Stop } from '#commands';
+import { Balance, Status, Stop } from '#commands';
 import { addSubscriber } from './subscribers.js';
 import { startTradeWatcher } from './trade-watcher.js';
-import { startArbitrageWatcher } from './arbitrage-watcher.js';
 
 const token = process.env.BOT_TOKEN;
 const ALLOWED_USERNAME = 'n1k1tabykov';
@@ -33,8 +32,6 @@ bot.use(async (ctx, next) => {
 const mainKeyboard = new ReplyKeyboardBuilder()
   .text('/balance')
   .text('/status')
-  .row()
-  .text('/trade')
   .text('/stop')
   .build({ resize_keyboard: true, is_persistent: true });
 
@@ -42,10 +39,7 @@ bot.command('start', async (ctx: Context) => {
   if (ctx.chatId !== undefined) {
     await addSubscriber(ctx.chatId);
   }
-  await ctx.reply(
-    'Привет! Я пришлю уведомление о каждой спотовой сделке на MEXC, а также об арбитражных возможностях между фьючерсами MEXC и BingX.',
-    { reply_markup: mainKeyboard },
-  );
+  await ctx.reply('Привет! Я пришлю уведомление о каждой спотовой сделке на MEXC.', { reply_markup: mainKeyboard });
 });
 
 bot.command('balance', async (ctx: Context) => {
@@ -58,18 +52,12 @@ bot.command('status', async (ctx: Context) => {
   await command.run(ctx);
 });
 
-bot.command('trade', async (ctx: Context) => {
-  const command = new Trade();
-  await command.run(ctx);
-});
-
 bot.command('stop', async (ctx: Context) => {
   const command = new Stop();
   await command.run(ctx);
 });
 
 startTradeWatcher(bot);
-startArbitrageWatcher(bot);
 
 bot.catch((err) => {
   console.error('Bot error:', err);

@@ -4,7 +4,6 @@ import type {
   MexcBalance,
   MexcContractDetail,
   MexcDetailResponse,
-  MexcFundingRateResponse,
   MexcFuturesAssetsResponse,
   MexcFuturesPosition,
   MexcFuturesPositionsResponse,
@@ -19,7 +18,6 @@ const MEXC_FUTURES_POSITIONS_URL = 'https://contract.mexc.com/api/v1/private/pos
 const MEXC_ORDER_SUBMIT_URL = 'https://contract.mexc.com/api/v1/private/order/submit';
 const MEXC_TICKER_URL = 'https://contract.mexc.com/api/v1/contract/ticker';
 const MEXC_DETAIL_URL = 'https://contract.mexc.com/api/v1/contract/detail';
-const MEXC_FUNDING_RATE_URL = 'https://contract.mexc.com/api/v1/contract/funding_rate';
 const MEXC_CONTRACT_DETAIL_TTL_MS = 30 * 60_000;
 
 let mexcContractDetailCache: { data: Map<string, MexcContractDetail>; fetchedAt: number } | null = null;
@@ -109,33 +107,6 @@ export async function getMexcFuturesPrices(): Promise<Map<string, number>> {
   return prices;
 }
 
-export async function getMexcFuturesVolumes(): Promise<Map<string, number>> {
-  const [res, details] = await Promise.all([fetch(MEXC_TICKER_URL), getMexcContractDetails()]);
-  const body = (await res.json()) as MexcTickerResponse;
-  const volumes = new Map<string, number>();
-
-  for (const ticker of body.data ?? []) {
-    if (!details.get(ticker.symbol)?.apiAllowed) continue;
-
-    const volume = Number(ticker.amount24);
-    if (volume >= 0) {
-      volumes.set(ticker.symbol.replace('_', '/'), volume);
-    }
-  }
-
-  return volumes;
-}
-
-export async function getMexcFundingRate(symbol: string): Promise<number> {
-  const res = await fetch(`${MEXC_FUNDING_RATE_URL}/${symbol}`);
-  const body = (await res.json()) as MexcFundingRateResponse;
-  if (!body.success || body.data === undefined) {
-    throw new Error(`Ошибка MEXC Futures API при получении funding rate (код ${body.code ?? res.status})`);
-  }
-
-  return body.data.fundingRate;
-}
-
 interface MexcOrderRequest {
   symbol: string;
   price: number;
@@ -158,57 +129,6 @@ async function submitMexcOrder(order: MexcOrderRequest): Promise<number> {
   }
 
   return data.data;
-}
-
-function computeMexcVol(detail: MexcContractDetail, price: number, marginUsdt: number, leverage: number): number {
-  const notional = marginUsdt * leverage;
-  const rawVol = notional / (price * detail.contractSize);
-  const scale = 10 ** detail.volScale;
-  const rounded = Math.round(rawVol * scale) / scale;
-  return Math.max(rounded, detail.minVol);
-}
-
-export async function openMexcFuturesPosition(
-  symbol: string,
-  side: 'long' | 'short',
-  price: number,
-  marginUsdt: number,
-  leverage: number,
-): Promise<{ orderId: number; vol: number }> {
-  const details = await getMexcContractDetails();
-  const detail = details.get(symbol);
-  if (!detail) {
-    throw new Error(`Нет данных контракта MEXC для ${symbol}`);
-  }
-
-  const vol = computeMexcVol(detail, price, marginUsdt, leverage);
-  const orderId = await submitMexcOrder({
-    symbol,
-    price,
-    vol,
-    side: side === 'long' ? 1 : 3,
-    type: 5,
-    openType: 1,
-    leverage,
-  });
-
-  return { orderId, vol };
-}
-
-export async function estimateMexcMargin(
-  symbol: string,
-  price: number,
-  marginUsdt: number,
-  leverage: number,
-): Promise<number> {
-  const details = await getMexcContractDetails();
-  const detail = details.get(symbol);
-  if (!detail) {
-    throw new Error(`Нет данных контракта MEXC для ${symbol}`);
-  }
-
-  const vol = computeMexcVol(detail, price, marginUsdt, leverage);
-  return (vol * detail.contractSize * price) / leverage;
 }
 
 export async function closeMexcFuturesPosition(position: MexcFuturesPosition, price: number): Promise<number> {
